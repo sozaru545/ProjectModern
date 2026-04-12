@@ -1,8 +1,12 @@
 const router = require("express").Router();
-const playersController = require("../controllers/players.controller");
+const { requireAuth, allowRoles } = require("../middleware/auth.middleware");
 
-router.get("/", playersController.listPlayers);
-router.get("/:playerId", playersController.getPlayerByPlayerId);
-router.post("/", playersController.createPlayer);
+router.get("/", (req, res) => {
+  res.json({ message: "All players" });
+});
+
+router.post("/", requireAuth, allowRoles("admin"), (req, res) => {
+  res.json({ message: "Player created" });
+});
 
 module.exports = router;

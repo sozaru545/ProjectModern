@@ -1,13 +1,12 @@
 const router = require("express").Router();
-const reportsController = require("../controllers/reports.controller");
-const optionalAuth = require("../middleware/optionalAuth.middleware");
+const { requireAuth, allowRoles } = require("../middleware/auth.middleware");
 
-// Phase 1: optional auth only (no enforcement yet)
-router.use(optionalAuth);
+router.get("/", requireAuth, (req, res) => {
+  res.json({ message: "Reports list" });
+});
 
-router.get("/", reportsController.listReports);
-router.post("/", reportsController.createReport);
-router.get("/:id", reportsController.getReportById);
-router.delete("/:id", reportsController.deleteReportById);
+router.post("/", requireAuth, allowRoles("admin", "analyst"), (req, res) => {
+  res.json({ message: "Report created" });
+});
 
 module.exports = router;
