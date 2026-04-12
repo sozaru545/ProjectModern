@@ -4,7 +4,11 @@ const User = require("../models/User");
 
 function signToken(user) {
   return jwt.sign(
-    { id: user._id.toString(), role: user.role, email: user.email },
+    {
+      id: user._id.toString(),
+      role: user.role,
+      email: user.email
+    },
     process.env.JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || "7d" }
   );
@@ -12,12 +16,19 @@ function signToken(user) {
 
 exports.register = async (req, res, next) => {
   try {
+    if (process.env.AUTH_PROVIDER === "keycloak") {
+      return res.status(403).json({
+        message: "Local registration is disabled when Keycloak auth is delegated"
+      });
+    }
+
     const { email, password, role } = req.body;
 
     if (!email || !password) {
       res.status(400);
       throw new Error("email and password are required");
     }
+
     if (password.length < 8) {
       res.status(400);
       throw new Error("password must be at least 8 characters");
@@ -41,7 +52,11 @@ exports.register = async (req, res, next) => {
 
     res.status(201).json({
       message: "registered",
-      user: { id: user._id, email: user.email, role: user.role },
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role
+      },
       token
     });
   } catch (err) {
@@ -51,6 +66,12 @@ exports.register = async (req, res, next) => {
 
 exports.login = async (req, res, next) => {
   try {
+    if (process.env.AUTH_PROVIDER === "keycloak") {
+      return res.status(403).json({
+        message: "Local login is disabled when Keycloak auth is delegated"
+      });
+    }
+
     const { email, password } = req.body;
 
     if (!email || !password) {
@@ -74,9 +95,32 @@ exports.login = async (req, res, next) => {
 
     res.json({
       message: "logged_in",
-      user: { id: user._id, email: user.email, role: user.role },
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role
+      },
       token
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.me = async (req, res, next) => {
+  try {
+    if (process.env.AUTH_PROVIDER === "keycloak") {
+      return res.json({ user: req.user });
+    }
+
+    const user = await User.findById(req.user.id).select("_id email role createdAt updatedAt");
+
+    if (!user) {
+      res.status(404);
+      throw new Error("user not found");
+    }
+
+    res.json({ user });
   } catch (err) {
     next(err);
   }

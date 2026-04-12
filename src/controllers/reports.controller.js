@@ -1,4 +1,6 @@
+const mongoose = require("mongoose");
 const Report = require("../models/Report");
+const Player = require("../models/Player");
 
 exports.listReports = async (req, res, next) => {
   try {
@@ -19,17 +21,25 @@ exports.createReport = async (req, res, next) => {
 
     if (!title || !Array.isArray(playersCompared) || playersCompared.length < 1) {
       res.status(400);
-      throw new Error("title and playersCompared (array with at least 1 playerId) are required");
+      throw new Error("title and playersCompared are required");
     }
 
-    // Phase 1: createdBy is optional; if token exists, attach user
-    const createdBy = req.user?.id || undefined;
+    const normalizedPlayers = playersCompared.map(Number);
+
+    const playersFound = await Player.countDocuments({
+      playerId: { $in: normalizedPlayers }
+    });
+
+    if (playersFound !== normalizedPlayers.length) {
+      res.status(400);
+      throw new Error("one or more playerIds do not exist");
+    }
 
     const report = await Report.create({
       title,
       description: description || "",
-      createdBy,
-      playersCompared: playersCompared.map(Number)
+      createdBy: req.user.id,
+      playersCompared: normalizedPlayers
     });
 
     res.status(201).json({ message: "report_created", report });
@@ -40,11 +50,18 @@ exports.createReport = async (req, res, next) => {
 
 exports.getReportById = async (req, res, next) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      res.status(400);
+      throw new Error("invalid report id");
+    }
+
     const report = await Report.findById(req.params.id).populate("createdBy", "email role");
+
     if (!report) {
       res.status(404);
       throw new Error("report not found");
     }
+
     res.json({ report });
   } catch (err) {
     next(err);
@@ -53,11 +70,29 @@ exports.getReportById = async (req, res, next) => {
 
 exports.deleteReportById = async (req, res, next) => {
   try {
-    const report = await Report.findByIdAndDelete(req.params.id);
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      res.status(400);
+      throw new Error("invalid report id");
+    }
+
+    const report = await Report.findById(req.params.id);
+
     if (!report) {
       res.status(404);
       throw new Error("report not found");
     }
+
+    const isAdmin = req.user.role === "admin";
+    const isOwner = report.createdBy && report.createdBy.toString() === req.user.id;
+
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({
+        message: "Forbidden: only the owner or admin can delete this report"
+      });
+    }
+
+    await Report.findByIdAndDelete(req.params.id);
+
     res.json({ message: "report_deleted" });
   } catch (err) {
     next(err);

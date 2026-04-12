@@ -1,12 +1,11 @@
 const router = require("express").Router();
+const teamsController = require("../controllers/teams.controller");
 const { requireAuth, allowRoles } = require("../middleware/auth.middleware");
 
-router.get("/", (req, res) => {
-  res.json({ message: "All teams" });
-});
-
-router.post("/", requireAuth, allowRoles("admin"), (req, res) => {
-  res.json({ message: "Team created" });
-});
+router.get("/", teamsController.listTeams);
+router.get("/:teamId", teamsController.getTeamByTeamId);
+router.post("/", requireAuth, allowRoles("admin"), teamsController.createTeam);
+router.put("/:teamId", requireAuth, allowRoles("admin"), teamsController.updateTeamByTeamId);
+router.delete("/:teamId", requireAuth, allowRoles("admin"), teamsController.deleteTeamByTeamId);
 
 module.exports = router;

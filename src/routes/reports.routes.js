@@ -1,12 +1,10 @@
 const router = require("express").Router();
+const reportsController = require("../controllers/reports.controller");
 const { requireAuth, allowRoles } = require("../middleware/auth.middleware");
 
-router.get("/", requireAuth, (req, res) => {
-  res.json({ message: "Reports list" });
-});
-
-router.post("/", requireAuth, allowRoles("admin", "analyst"), (req, res) => {
-  res.json({ message: "Report created" });
-});
+router.get("/", requireAuth, reportsController.listReports);
+router.post("/", requireAuth, allowRoles("admin", "analyst"), reportsController.createReport);
+router.get("/:id", requireAuth, reportsController.getReportById);
+router.delete("/:id", requireAuth, reportsController.deleteReportById);
 
 module.exports = router;
