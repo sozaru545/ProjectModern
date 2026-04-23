@@ -7,6 +7,8 @@ function PlayersPage() {
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState("");
 
+  const user = JSON.parse(localStorage.getItem("user"));
+
   useEffect(() => {
     const fetchPlayers = async () => {
       try {
@@ -21,6 +23,11 @@ function PlayersPage() {
   }, []);
 
   const saveFavorite = async (playerId) => {
+    if (!user) {
+      setMessage("You must be logged in to add favorites.");
+      return;
+    }
+
     try {
       await createFavorite(playerId);
       setMessage("Added to favorites!");
