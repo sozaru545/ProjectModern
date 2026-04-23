@@ -9,6 +9,8 @@ const authRoutes = require("./routes/auth.routes");
 const playersRoutes = require("./routes/players.routes");
 const teamsRoutes = require("./routes/teams.routes");
 const reportsRoutes = require("./routes/reports.routes");
+const favoritesRoutes = require("./routes/favorites.routes");
+const comparisonsRoutes = require("./routes/comparisons.routes");
 
 const sanitize = require("./middleware/sanitize.middleware");
 const notFound = require("./middleware/notFound.middleware");
@@ -31,7 +33,7 @@ app.use(sanitize);
 app.use(
   rateLimit({
     windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000),
-    max: Number(process.env.RATE_LIMIT_MAX_REQUESTS || 200),
+    max: Number(process.env.RATE_LIMIT_MAX_REQUESTS || 5000),
     standardHeaders: true,
     legacyHeaders: false
   })
@@ -50,6 +52,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/players", playersRoutes);
 app.use("/api/teams", teamsRoutes);
 app.use("/api/reports", reportsRoutes);
+app.use("/api/favorites", favoritesRoutes);
+app.use("/api/comparisons", comparisonsRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
